@@ -48,7 +48,7 @@ Yes! The config file can embed multiple interception points definitions, and the
 
 You will be able to diffentiate them by their "message ID" in the python callbacks.
 
-## Oops, the kernel just BSOD! ##
+## Oops, BSOD! ##
 
 Don't worry, there is also a simple HTTP server (`logrecvr.py`) and the `httpNetSend` function which allow you to send your test cases (and modification) to a remote host in realtime.
 
