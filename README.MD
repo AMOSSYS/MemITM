@@ -1,9 +1,5 @@
-MemITM Fuzzer/Sniffer
 
-
-
-
-## What's the MemITM tool? ##
+# What's the MemITM tool? ##
 
 The MemITM tool has been developped in order to allow intercepting easily "messages" in Windows processes memory. We developped a lot of similar tools in order to capture network messages before encryption, or IPC messages, and to be able to inspect them or alter them to do some fuzzing, but each tool what really custom, not generic.
 
@@ -13,13 +9,17 @@ The tool consists in :
 - the DLL file, which loads the config and places the hooks in the process ;
 - a python script, which communicates with the injected DLL/hooks, and gets in realtime the intercepted buffers (and can alter them) in really simple callbacks you can modify as you want.
 
-## How can I use MemITM? ##
+You may download it (sources + compiled) here: https://github.com/Amossys/MemITM
 
-Let's say you want to intercept file writes (there are simpler ways to do it, but that's for the example) in a specific Windows process. File writes are performed by the WriteFile function, which is exported by kernelbase.dll, and follows the scheme `BOOL WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, ...)`. Let's intercept and alter its behavior.
+## How simple is MemITM? ##
 
-First, open your "kernelbase.dll" file in IDA Pro, load the generate.idapython.py script, and just run `getHook(LocByName("WriteFile"), "rdx","r8")`. WriteFile is a __fastcall function : lpBuffer is pointed by RDX and nNumberOfBytesToWrite by R8.
+Let's say you want to intercept file writes (there are simpler ways to do it, but that's for the example) in a specific Windows process. File writes are performed by the `WriteFile` function, which is exported by `kernelbase.dll`, and follows the scheme `BOOL WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, ...)`. WriteFile is a `__fastcall` function : `lpBuffer` is pointed by `RDX` and `NumberOfBytesToWrite` by `R8`. Let's intercept these buffers.
 
-Then, run Python `fuzzer.py <process pid>`. That's it : a hook has been placed on the `WriteFile` function, and the fuzzer.py "logger" and "fuzzer" functions will receive a copy of the buffer, and may return a modified version (can't change the size).
+**1:** open your "kernelbase.dll" file in IDA Pro, load the `generate.idapython.py` script, and just run `getHook(LocByName("WriteFile"), "rdx","r8")` followed by `updateConfig("config.bin")`. 
+
+**2:** run `Python memitm.py notepad.exe config.bin`.
+
+That's it : a hook has been placed on the `WriteFile` function, and the memitm.py "logger" and "fuzzer" functions will receive a copy of the buffer, and may return a modified version (can't change the size).
 
 ## My buffer is not pointed by a register! ##
 
@@ -56,7 +56,7 @@ Don't worry, there is also a simple HTTP server (`logrecvr.py`) and the `httpNet
 
 Well, you can start using the `bufferBitFlip` function in order to flip several bits. Logging raw messages will allow you to write your own dissector, and to start implementing manually a better fuzzer :).
 
-For instance, for ALPC messages, you may have the following fuzzer.py setup:
+For instance, for ALPC messages, you may have the following memitm.py setup:
 
     def logger(data, msgID=None, pid=0):
         totalLen = 0
@@ -110,7 +110,7 @@ The DLL injector is a simple DLL injector (CreateRemoteThread/LoadLibrary stuff)
 
 The DLL itself initiates a shared memory area and waits for the config data (the shared memory area has 3 generic fields : the shared memory message ID, the message size and the message buffer). Once received, it parses and installs the hooks in memory, and no config update will be allowed after this (you must kill the process if you want to set up new hooks). Any placed hook will land in the `genericHookFunction` DLL function. This function just fills the memory area (protected with critical sections) with the buffer data, its size and the message ID (set in higher bits of the shared memory message ID field). In order to notify the python process, 2 events are used to signal new messages and to wait for the process to patch them (timeout is 2 seconds). If the buffer has been updated, the original buffer is updated.
 
-The fuzzer.py script runs the injector process, and waits for the shared memory to be created. It then sends the configuration and waits for the message event. When received, the shared memory is read and the `logger` and `fuzzer` functions are called with the buffer, the process ID and the message ID. If the `logger` function returns a different buffer than the original one and its size is equal, it is written to the shared memory area. The "ACK" event is then signaled, and the script waits for a new message.
+The memitm.py script runs the injector process, and waits for the shared memory to be created. It then sends the configuration and waits for the message event. When received, the shared memory is read and the `logger` and `fuzzer` functions are called with the buffer, the process ID and the message ID. If the `logger` function returns a different buffer than the original one and its size is equal, it is written to the shared memory area. The "ACK" event is then signaled, and the script waits for a new message.
 
 ## That's it! ##
 
