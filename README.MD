@@ -14,9 +14,9 @@ You may download it (sources + compiled) here: https://github.com/Amossys/MemITM
 
 Let's say you want to intercept file writes (there are simpler ways to do it, but that's for the example) in a specific Windows process. File writes are performed by the `WriteFile` function, which is exported by `kernelbase.dll`, and follows the scheme `BOOL WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, ...)`. WriteFile is a `__fastcall` function : `lpBuffer` is pointed by `RDX` and `NumberOfBytesToWrite` by `R8`. Let's intercept these buffers.
 
-**1:** open your "kernelbase.dll" file in IDA Pro, load the `generate.idapython.py` script, and just run `getHook(LocByName("WriteFile"), "rdx","r8")` followed by `updateConfig("config.bin")`. 
+1. open your "kernelbase.dll" file in IDA Pro, load the `generate.idapython.py` script, and just run `getHook(LocByName("WriteFile"), "rdx","r8")` followed by `updateConfig("config.bin")`. 
 
-**2:** run a notepad and then, `python memitm.py notepad.exe config.bin`.
+2. run a notepad and then, `python memitm.py notepad.exe config.bin`.
 
 That's it! A hook has been placed on the `WriteFile` function, and the memitm.py "logger" and "fuzzer" functions will receive a copy of the buffer.
 
