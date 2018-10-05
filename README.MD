@@ -10,7 +10,7 @@ The MemITM tool has been developped in order to address these problems, and cons
 
 You may download it (sources + compiled) here: https://github.com/Amossys/MemITM
 
-## How simple is MemITM? ##
+## How simple is MemITM? (Example1: WriteFile) ##
 
 Let's say you want to intercept file writes (there are simpler ways to do it, but that's for the example) in a specific Windows process. File writes are performed by the `WriteFile` function, which is exported by `kernelbase.dll`, and follows the scheme `BOOL WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, ...)`. WriteFile is a `__fastcall` function : `lpBuffer` is pointed by `RDX` and `NumberOfBytesToWrite` by `R8`. Let's intercept these buffers.
 
@@ -20,7 +20,7 @@ Let's say you want to intercept file writes (there are simpler ways to do it, bu
 
 That's it! A hook has been placed on the `WriteFile` function, and the memitm.py "logger" and "fuzzer" functions will receive a copy of the buffer.
 
-## My buffer is not pointed by a register! ##
+## My buffer is not pointed by a register! (Example2: NtCreateFile) ##
 
 The `getHook` function allows specifying registers for the buffer and its size, but in some cases it may not be the case. Let's say you want to intercept `NtCreateFile` syscalls and get the filename. `NtCreateFile` follows the scheme `NTSTATUS NtCreateFile( OUT PHANDLE FileHandle, IN ACCESS_MASK DesiredAccess, IN POBJECT_ATTRIBUTES ObjectAttributes, ...)`, and the file name can be obtained by `ObjectAttributes->ObjectName->Buffer` (size is `ObjectAttributes->ObjectName->Length * sizeof(WCHAR)`).
 
@@ -53,6 +53,13 @@ Don't worry, there is also a simple HTTP server (`logserver.py`) and the `httpNe
 
 Well, you can start using the `bufferBitFlip` function in order to... flip several bits. Logging raw messages will allow you to write your own dissector, and to start implementing manually a better fuzzer :). Remember: you can't change the buffer size!
 
+For instance, in our `WriteFile` example, the following `fuzzer` function will replace "hello" by "world":
+
+    def fuzzer(data, msgID=None, pid = 0):
+       return data.replace("hello","world")
+
+## Example3: dissecting ALPC messages ##
+
 For instance, for ALPC messages, you may have the following `memitm.py` setup:
 
     def logger(data, msgID=None, pid=0):
@@ -78,15 +85,6 @@ For instance, for ALPC messages, you may have the following `memitm.py` setup:
         logMessage = "ALPC message : %x:%x - %x:%x - %d:%d - %x - %x" % (totalLen, dataLen, typ, dataInfoOffset, cid, tid, messageID, clientViewSize)
         print logMessage
         return
-
-    def fuzzer(data, msgID=None, pid = 0):
-        # skip the PORT_MESSAGE header (0x18 bytes)
-        if len(data) < 0x18:
-            return data
-        # bitflip 0.5% bytes
-        data = data[:0x18]+bufferBitFlip(data[0x18:], rate=0.02, filter=2)
-        # send the updated buffer our host
-        return data
 
 ## How does it works internally? ##
 
