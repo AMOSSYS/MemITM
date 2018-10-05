@@ -37,7 +37,7 @@ In the `NtCreateFile` case, we can just run this ASM code to do the work:
     and rdx, 0xFFFF       ; Length is a USHORT 
     shl rdx, 1            ; and must be *2
 
-Let's assemble this (using for instance the online disassembly website) : `498B4010488B4810488B104881E2FFFF000048D1E2`. Our `getHook` call should now be `getHook(LocByName("NtWriteFile", t1customOpcodes="498B…E2")`.
+Let's assemble this (using for instance the online disassembly website) : `498B4010488B4810488B104881E2FFFF000048D1E2`. Our `getHook` call should now be `getHook(LocByName("NtCreateFile", t1customOpcodes="498B…E2")`.
 
 ## Can I intercept multiple calls? ##
 
