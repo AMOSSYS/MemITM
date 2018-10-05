@@ -18,15 +18,15 @@ Let's say you want to intercept file writes (there are simpler ways to do it, bu
 
 2. run a notepad and then, `python memitm.py notepad.exe config.bin`.
 
-That's it! A hook has been placed on the `WriteFile` function, and the memitm.py "logger" and "fuzzer" functions will receive a copy of the buffer.
+That's it! A hook has been placed on the `WriteFile` function, and the `memitm.py` "logger" and "fuzzer" functions will receive a copy of the buffer.
 
 ## My buffer is not pointed by a register! (Example2: NtCreateFile) ##
 
 The `getHook` function allows specifying registers for the buffer and its size, but in some cases it may not be the case. Let's say you want to intercept `NtCreateFile` syscalls and get the filename. `NtCreateFile` follows the scheme `NTSTATUS NtCreateFile( OUT PHANDLE FileHandle, IN ACCESS_MASK DesiredAccess, IN POBJECT_ATTRIBUTES ObjectAttributes, ...)`, and the file name can be obtained by `ObjectAttributes->ObjectName->Buffer` (size is `ObjectAttributes->ObjectName->Length * sizeof(WCHAR)`).
 
 `getHook` also allows specifying a shellcode in its `t1customOpcodes` parameter instead of registers. This shellcode must :
-- place the buffer pointer into the RCX register;
-- place the buffer's size into the RDX register;
+- place the buffer pointer into the `RCX` register;
+- place the buffer's size into the `RDX` register;
 - not mess up with the stack.
 
 In the `NtCreateFile` case, we can just run this ASM code to do the work:
@@ -93,7 +93,7 @@ The IDA Pro script embeds a simple "hooking" engine, which allows moving several
 It generates the following information in the config file:
 - the module name;
 - the relative address of the interception point;
-- the interception hook area (aka "T1 trampoline"), which places the buffer/length into RCX/RDX and calls the DLL log routine;
+- the interception hook area (aka "T1 trampoline"), which places the buffer/length into `RCX`/`RDX` and calls the DLL log routine;
 - the restoration hook area (aka "T2 trampoline"), which restores the context and executes replaced instructions before returning to the interception point;
 - the restoration hook area relocations, for relative instructions which have been converted to absolute ones and must be patched.
 
